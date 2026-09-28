@@ -226,7 +226,7 @@ The main hospital-selection workflow can be represented as:
                 │
                 ▼
 ┌─────────────────────────────────────────┐
-│          Hospital Evaluation             │
+│          Hospital Evaluation            │
 │                                         │
 │ Hospital Capabilities                   │
 │ Hospital Resources                      │
@@ -258,7 +258,7 @@ The Pregnancy LLM has a **separate workflow**:
 ┌───────────────────────────────┐
 │            User               │
 │                               │
-│ Pregnancy-related Question   │
+│ Pregnancy-related Question    │
 └───────────────┬───────────────┘
                 │
                 ▼
@@ -626,16 +626,16 @@ The **Hospital Selection System** handles the hospital decision and navigation p
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│              INTELLIGENT MATERNAL HEALTHCARE PLATFORM              │
+│              INTELLIGENT MATERNAL HEALTHCARE PLATFORM               │
 │                                                                     │
 │  ┌──────────────────────────────┐    ┌────────────────────────────┐ │
-│  │   HOSPITAL SELECTION SYSTEM  │    │  PREGNANCY LLM ASSISTANT  │ │
+│  │   HOSPITAL SELECTION SYSTEM  │    │  PREGNANCY LLM ASSISTANT   │ │
 │  │                              │    │                            │ │
 │  │  Maternal Assessment         │    │  Pregnancy Questions       │ │
 │  │           │                  │    │           │                │ │
 │  │           ▼                  │    │           ▼                │ │
 │  │  Care Requirement            │    │  Pregnancy-focused         │ │
-│  │  Assessment                  │    │  LLM                        │ │
+│  │  Assessment                  │    │  LLM                       │ │
 │  │           │                  │    │           │                │ │
 │  │           ▼                  │    │           ▼                │ │
 │  │  Hospital Capabilities       │    │  Information & Guidance    │ │
@@ -651,7 +651,7 @@ The **Hospital Selection System** handles the hospital decision and navigation p
 │  │  + Alternatives + Routes     │                                   │
 │  └──────────────────────────────┘                                   │
 │                                                                     │
-│                 TWO SEPARATE INTELLIGENT COMPONENTS                │
+│                 TWO SEPARATE INTELLIGENT COMPONENTS                 │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
