@@ -2,7 +2,7 @@
 
 **Project:** MaternaCare : Intelligent Maternal Healthcare Access & Hospital Selection Platform  
 **Workstream:** Team 3: Evaluation & Integration  
-**Role:** **Member 5 — Comparative Testing**  
+**Role:** **Member 5  -  Comparative Testing**  
 **Date:** October 2026  
 **Repository Branch:** `GIS-Features`  
 
@@ -17,14 +17,14 @@ As part of **Team 3 (Evaluation & Integration)**, Member 5 is responsible for **
 
 ### Key Empirical Findings (30 Test Cases Across 2.3M Node Upper Egypt Graph)
 * **Optimality & Correctness:** **100.0% Exact Match** (30/30). Both algorithms identified the **identical nearest hospital** and computed the **identical minimum travel time** in all test scenarios.
-* **Search Space Pruning:** Enhanced Dijkstra settled an average of **6,370 nodes** compared to **2,017,284 nodes** for Baseline Dijkstra — achieving an average **98.89% search space reduction** (a **316.7× pruning factor**).
-* **Runtime Execution Performance:** Average execution time dropped from **5,563.80 ms (~5.56 s)** in Baseline down to **17.71 ms (~0.018 s)** in Enhanced Dijkstra — an average **753.3× speedup factor** (median: **462.1×**, max: **3,414.2×**).
+* **Search Space Pruning:** Enhanced Dijkstra settled an average of **6,370 nodes** compared to **2,017,284 nodes** for Baseline Dijkstra  -  achieving an average **98.89% search space reduction** (a **316.7× pruning factor**).
+* **Runtime Execution Performance:** Average execution time dropped from **5,563.80 ms (~5.56 s)** in Baseline down to **17.71 ms (~0.018 s)** in Enhanced Dijkstra  -  an average **753.3× speedup factor** (median: **462.1×**, max: **3,414.2×**).
 * **Latency Impact for Mobile Clients:** A 5.5-second lag is prohibitive for emergency mobile apps; a 17-millisecond response delivers instant, zero-lag hospital recommendations.
 
 ### Visual Summary: Which is Faster?
 ![Speed Comparison](speed_comparison_simple.png)
 * **Baseline Dijkstra:** 5.56 seconds (noticeable waiting delay).
-* **Enhanced Dijkstra (EDSPA):** 0.018 seconds (18 ms) — **753× faster** (faster than an eye blink).
+* **Enhanced Dijkstra (EDSPA):** 0.018 seconds (18 ms)  -  **753× faster** (faster than an eye blink).
 
 ---
 
