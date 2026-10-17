@@ -1,6 +1,6 @@
 # Comparative Testing & Benchmarking Report: Baseline Dijkstra vs. Enhanced Dijkstra (EDSPA)
 
-**Project:** MaternaCare (رِعَايَة) — Intelligent Maternal Healthcare Access & Hospital Selection Platform  
+**Project:** MaternaCare : Intelligent Maternal Healthcare Access & Hospital Selection Platform  
 **Workstream:** Team 3: Evaluation & Integration  
 **Role:** **Member 5 — Comparative Testing**  
 **Date:** October 2026  
