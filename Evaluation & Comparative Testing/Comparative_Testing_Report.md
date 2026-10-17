@@ -21,6 +21,11 @@ As part of **Team 3 (Evaluation & Integration)**, Member 5 is responsible for **
 * **Runtime Execution Performance:** Average execution time dropped from **5,563.80 ms (~5.56 s)** in Baseline down to **17.71 ms (~0.018 s)** in Enhanced Dijkstra — an average **753.3× speedup factor** (median: **462.1×**, max: **3,414.2×**).
 * **Latency Impact for Mobile Clients:** A 5.5-second lag is prohibitive for emergency mobile apps; a 17-millisecond response delivers instant, zero-lag hospital recommendations.
 
+### Visual Summary: Which is Faster?
+![Speed Comparison](speed_comparison_simple.png)
+* **Baseline Dijkstra:** 5.56 seconds (noticeable waiting delay).
+* **Enhanced Dijkstra (EDSPA):** 0.018 seconds (18 ms) — **753× faster** (faster than an eye blink).
+
 ---
 
 ## 2. Test Case Design & Methodology
