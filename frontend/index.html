@@ -45,6 +45,18 @@
 
       <section class="card small">
         <label class="check"><input type="checkbox" id="showFacilities" checked autocomplete="off"> Show all hospitals considered <span id="facCount"></span></label>
+        <div class="govfilter">
+          <button type="button" id="govBtn" class="govbtn" aria-expanded="false" aria-controls="govPanel" disabled>
+            <span id="govBtnText">Filter by governorate</span><span class="caret" aria-hidden="true">▾</span>
+          </button>
+          <div id="govPanel" class="govpanel" hidden>
+            <div class="govtools">
+              <button type="button" id="govAll" class="linkbtn">Select all</button>
+              <button type="button" id="govNone" class="linkbtn">Clear</button>
+            </div>
+            <ul id="govList" class="govlist"></ul>
+          </div>
+        </div>
         <p class="note">Travel times are <strong>estimates</strong> based on assumed speeds per road type, not live traffic. Always call ahead and follow local emergency guidance.</p>
       </section>
     </aside>

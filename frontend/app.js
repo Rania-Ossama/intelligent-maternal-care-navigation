@@ -545,15 +545,91 @@
     updateFindButton();
   }
 
+  // ---- hospitals on the map, grouped by governorate ----------------------
+  const NO_GOV = "(no governorate)";
+  let govGroups = new Map();       // governorate -> { layer, count }
+  let govSelected = new Set();     // governorates currently shown on the map
+  let govKnown = new Set();        // governorates seen in earlier loads (so a reload keeps your choice)
+  let govTotal = 0;
+
+  function buildFacilityLayers(facilities) {
+    facilityLayer.clearLayers();
+    govGroups = new Map();
+    facilities.forEach((f) => {
+      const g = (f.governorate || "").trim() || NO_GOV;
+      let grp = govGroups.get(g);
+      if (!grp) { grp = { layer: L.layerGroup(), count: 0 }; govGroups.set(g, grp); }
+      grp.count++;
+      L.circleMarker([f.lat, f.lon], { radius: 4, color: "#7f1d1d", weight: 1, fillColor: "#ef4444", fillOpacity: 0.8 })
+        .bindTooltip(f.name, { direction: "top" }).addTo(grp.layer);
+    });
+    govTotal = facilities.length;
+    const keep = new Set([...govGroups.keys()].filter((g) => govSelected.has(g) || !govKnown.has(g)));
+    govSelected = keep;
+    govGroups.forEach((_, g) => govKnown.add(g));
+    renderGovList();
+    applyGovSelection();
+  }
+
+  function govNames() {
+    return [...govGroups.keys()].sort((a, b) =>
+      a === NO_GOV ? 1 : b === NO_GOV ? -1 : a.localeCompare(b));
+  }
+
+  function renderGovList() {
+    const ul = $("govList");
+    ul.replaceChildren();
+    govNames().forEach((g) => {
+      const cb = el("input", { type: "checkbox", "data-gov": g, onchange: (e) => {
+        if (e.target.checked) govSelected.add(g); else govSelected.delete(g);
+        applyGovSelection();
+      } });
+      const row = el("label", { class: "govrow" }, cb,
+        el("span", { class: "govname", dir: "auto", text: g, title: g }),
+        el("span", { class: "govcount", text: String(govGroups.get(g).count), "aria-label": `${govGroups.get(g).count} hospitals` }));
+      const only = el("button", { type: "button", class: "linkbtn govonly", text: "only",
+        title: `Show only ${g}`, onclick: () => { govSelected = new Set([g]); applyGovSelection(); } });
+      ul.append(el("li", {}, row, only));
+    });
+    $("govBtn").disabled = !$("showFacilities").checked || govGroups.size === 0;
+  }
+
+  // show/hide each governorate's markers, then refresh the checkboxes, the button text and the count
+  function applyGovSelection() {
+    let shown = 0;
+    govGroups.forEach((grp, g) => {
+      const on = govSelected.has(g);
+      if (on) { shown += grp.count; if (!facilityLayer.hasLayer(grp.layer)) facilityLayer.addLayer(grp.layer); }
+      else if (facilityLayer.hasLayer(grp.layer)) facilityLayer.removeLayer(grp.layer);
+    });
+    document.querySelectorAll("#govList input[data-gov]").forEach((cb) => { cb.checked = govSelected.has(cb.dataset.gov); });
+    const n = govSelected.size, all = govGroups.size;
+    $("govBtnText").textContent = !all ? "Filter by governorate"
+      : n === all ? `All governorates (${all})`
+      : n === 0 ? "No governorate selected"
+      : n === 1 ? [...govSelected][0]
+      : `${n} of ${all} governorates`;
+    $("govBtnText").dir = n === 1 ? "auto" : "ltr";
+    $("facCount").textContent = govTotal ? (shown === govTotal ? `(${govTotal})` : `(${shown} of ${govTotal})`) : "";
+  }
+
+  function setGovPanel(open) {
+    $("govPanel").hidden = !open;
+    $("govBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function initGovFilter() {
+    $("govBtn").addEventListener("click", () => setGovPanel($("govPanel").hidden));
+    $("govAll").addEventListener("click", () => { govSelected = new Set(govGroups.keys()); applyGovSelection(); });
+    $("govNone").addEventListener("click", () => { govSelected = new Set(); applyGovSelection(); });
+    document.addEventListener("click", (e) => { if (!e.target.closest(".govfilter")) setGovPanel(false); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setGovPanel(false); });
+  }
+
   async function loadFacilities() {
     try {
       const d = await api("/api/facilities");
-      facilityLayer.clearLayers();
-      d.facilities.forEach((f) => {
-        L.circleMarker([f.lat, f.lon], { radius: 4, color: "#7f1d1d", weight: 1, fillColor: "#ef4444", fillOpacity: 0.8 })
-          .bindTooltip(f.name, { direction: "top" }).addTo(facilityLayer);
-      });
-      $("facCount").textContent = `(${d.facilities.length})`;
+      buildFacilityLayers(d.facilities);
       facilitiesLoadedFor = JSON.stringify(d.stats);
     } catch (err) {
       $("facCount").textContent = "";
@@ -619,7 +695,10 @@
     $("findBtn").addEventListener("click", runSearch);
     $("showFacilities").addEventListener("change", (e) => {
       if (e.target.checked) facilityLayer.addTo(map); else map.removeLayer(facilityLayer);
+      $("govBtn").disabled = !e.target.checked || govGroups.size === 0;   // filter only matters while the dots are shown
+      if (!e.target.checked) setGovPanel(false);
     });
+    initGovFilter();
     $("retryBtn").addEventListener("click", async () => {
       $("retryBtn").disabled = true;
       try { await api("/api/admin/rebuild", { method: "POST" }); } catch (err) { toast(err.message || "Could not restart the build."); }

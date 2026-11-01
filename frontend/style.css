@@ -148,3 +148,24 @@ button:focus-visible { outline: 3px solid #9ccfbd; outline-offset: 1px; }
 #moreWrap { margin: 0 0 12px; }
 button.more { width: 100%; }
 button.more:disabled { opacity: .6; cursor: wait; }
+
+/* governorate filter (under "Show all hospitals considered") */
+.govfilter { margin-top: 10px; }
+.govbtn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; background: #fff; border: 1px solid #c3ccd9; border-radius: 9px; color: var(--ink); font: inherit; font-size: 13.5px; cursor: pointer; text-align: left; }
+.govbtn:hover:not(:disabled) { background: #f4f6f9; }
+.govbtn:disabled { opacity: .5; cursor: not-allowed; }
+.govbtn .caret { transition: transform .15s; color: var(--muted); }
+.govbtn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+.govpanel { margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; background: #fff; overflow: hidden; }
+.govtools { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--line); background: #f8fafc; }
+.linkbtn { background: none; border: 0; padding: 2px 0; color: var(--blue); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+.govlist { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
+.govlist li { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 0; border-bottom: 1px solid #eef1f6; }
+.govlist li:last-child { border-bottom: 0; }
+.govrow { flex: 1; display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; font-size: 13.5px; min-width: 0; }
+.govname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.govcount { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; background: #eef1f6; border-radius: 10px; padding: 1px 8px; }
+.govonly { visibility: hidden; }
+.govlist li:hover .govonly, .govlist li:focus-within .govonly { visibility: visible; }
+@media (hover: none) { .govonly { visibility: visible; } }

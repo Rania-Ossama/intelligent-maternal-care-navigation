@@ -1,3 +1,34 @@
-*parquet
+data/*
+*.parquet
+!sample_data/*.parquet      # the tiny test files are fine to keep
+*.pbf
+*.osm
+*.gdb/
+*.gpkg
+*.shp
+*.geojson
+
+data/processed/
 hospital_locations_map.html
 hospital_locations_plotly.html
+*.log
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+.coverage
+
+
+# ---- Secrets----
+.env
+config.local.yaml
+*.key
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
