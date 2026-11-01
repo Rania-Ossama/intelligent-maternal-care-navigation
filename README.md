@@ -1,711 +1,123 @@
-# Intelligent Maternal Healthcare Access & Hospital Selection Platform
+# Hospital Finder – nearest hospitals by road (Upper Egypt)
 
-An intelligent maternal healthcare platform designed to help pregnant women, particularly those with limited access to regular medical follow-up, identify appropriate hospitals for delivery or urgent maternal care based on their current pregnancy status, hospital capabilities, availability, and real-world accessibility.
+Drop a pin anywhere in Egypt (or type the coordinates) and the app shows the **5 nearest hospitals by road** (and **5 more** with one press of *Show 5 more hospitals*),
+each with road distance, estimated travel time, phone and address, and compares the compute time of
+**Enhanced Dijkstra** (early exit) with **Standard Dijkstra** (whole graph). Any hospital whose estimated
+travel time is **over 60 minutes is flagged in red**.
 
-# Overview
+## 1. Run it
 
-Access to appropriate maternal healthcare is not only a medical problem. It can also be an **accessibility, information, and decision-making problem**.
+You need **Python 3.10 or newer** (3.11+ recommended). An internet connection is needed only for the map tiles.
 
-A pregnant woman may know that she needs to go to a hospital, but she may not know:
+1. Put your three files in the `data/` folder (names are set in `config.yaml`):
+   * `Upper_Egypt_nodes.parquet`
+   * `Upper_Egypt_edges_weighted.parquet`
+   * `facilities_flagged.csv`  (or `final_maternal_facilities_clean.csv` – change the name in `config.yaml`)
+2. Start it
+   * **Windows:** double-click `start.bat`
+   * **macOS / Linux:** `./start.sh`
+   * or manually: `pip install -r requirements.txt` then `python run.py`
+3. The browser opens at <http://localhost:8000>.
 
-* Which hospital is appropriate for her situation
-* Whether the hospital can handle her case
-* Whether the hospital has the required maternal or neonatal services
-* Which hospital is realistically reachable from her current location
-* Which route will get her there fastest
-* Whether a closer hospital is actually suitable
-* What alternatives are available if the first hospital cannot provide the required care
+**First start:** the app builds the road graph from your parquet files and shows a loading screen
+(roughly a minute or a few minutes for the full 2.3M-node network). The result is saved in
+`data/processed/`. **Every later start just loads that saved file** (a few seconds).
 
-This problem can become particularly important for women who have limited financial resources and therefore may not have consistent access to private healthcare, regular antenatal follow-up, or a physician who can continuously guide them through their pregnancy and delivery planning.
+Memory: building needs about 1.5–2 GB of free RAM, serving about 1 GB.
 
-The proposed project addresses this problem through an **intelligent maternal healthcare access platform**.
-
-The system first asks the pregnant woman a set of understandable questions about her pregnancy and current situation. It then uses the collected information to identify her care requirements and evaluates available hospitals according to:
-
-* Her current situation
-* Pregnancy-related factors
-* Emergency status
-* Required hospital capabilities
-* Hospital availability and resources
-* Geographic distance
-* Road-network accessibility
-* Estimated travel time
-* Route conditions
-
-The system then provides a **ranked list of suitable hospitals**, including the most suitable option followed by alternatives.
-
-In addition, the platform includes a **Pregnancy LLM Assistant** as a separate component that can answer pregnancy-related questions and provide accessible information to women who may not have regular access to a healthcare professional.
-
----
-
-# The Problem
-
-## The Main Problem
-
-A woman may reach the point where she needs to deliver or requires urgent maternal care without having enough information to determine **where she should go**.
-
-Knowing the nearest hospital is not necessarily enough.
-
-A hospital may be:
-
-* Close but lack required services
-* Accessible but not suitable for the woman's current situation
-* Equipped for normal delivery but not for a complicated case
-* Able to provide some services but lack critical resources
-* Geographically close but difficult to reach because of the available road network or traffic
-
-Therefore, the problem can be represented as:
-
-```text
-Where should this woman go?
+### Try it without your data
 ```
-
-rather than simply:
-
-```text
-What is the nearest hospital?
+python tools/make_sample_data.py
+python run.py --config sample_data/config.sample.yaml
 ```
+Then try the pin `27.5590, 31.1590` (two of the three hospitals are flagged as over 1 hour).
 
----
+## 2. Using the page
+* Click the map to drop a pin (only possible **inside Egypt**; outside Egypt is shaded). Drag it to move it.
+* The pin fills the **Latitude / Longitude** boxes; you can edit them (the pin follows). Arabic digits,
+  decimal commas and pasted `27.18, 31.18` all work.
+* **Find nearest hospitals** → 5 cards + coloured routes. **Show 5 more hospitals** (once per search) adds ranks 6–10. Change both numbers in `config.yaml` → `search.results` / `search.more_results`.
+* **Show all hospitals considered** (red dots) is ticked by default; untick it to hide them.
+* Click a card to zoom to its route; tick/untick to hide a route.
+* **Algorithm timing** shows compute time and nodes settled for both algorithms. Enhanced appears immediately;
+  Standard runs in the background (seconds) and fills in when finished.
 
-# Target Users
+## 3. Updating the data later
+| You change… | What happens |
+|---|---|
+| `facilities_flagged.csv` | Re-read automatically on the next search. No restart. |
+| nodes / edges parquet | Detected within ~5 s (size or modified time). The page shows the loading screen, the graph is rebuilt and reloaded automatically. |
+| `config.yaml` | Restart the app. Graph-related settings also trigger a rebuild. |
+| Force a rebuild | Delete `data/processed/` and restart, or `POST /api/admin/rebuild`. |
 
-The primary target users are **pregnant women who may have limited access to continuous maternal healthcare guidance**, particularly women from lower-income communities.
+If a replacement file is broken, the app keeps showing a clear error (and, for the facilities CSV, keeps serving the
+last good list) until you fix it.
 
-The system is designed to reduce the dependence on prior knowledge of:
+## 4. What the graph builder does (embedded in `app/graph_builder.py`)
+1. Reads only the needed columns (`id, lon, lat` / `u, v, length, travel_time_s`) – the heavy `geometry` column is skipped.
+2. If the edges file has no `travel_time_s`, computes it from `length` + `maxspeed`/`highway` (speed table in `config.yaml`).
+3. Removes edges with unknown nodes, self loops, invalid weights, and keeps the fastest of duplicate edges.
+4. **Stitches gaps:** every disconnected piece with ≥ 25 nodes lying ≤ 500 m from the main network is joined with a
+   two-way bridge edge (30 km/h). Repeated up to 4 rounds. Every bridge is logged in `data/processed/stitched_edges.csv`.
+5. Keeps only the **largest strongly connected component**, so a search can never be trapped in an island or a one-way dead end.
+6. Writes `graph_nodes.parquet`, `graph_edges.parquet`, `graph_meta.json` (written last, atomically).
 
-* hospitals
-* hospital capabilities
-* healthcare accessibility
-* medical terminology
-* transportation routes
+Hospitals and the pin are snapped only to this cleaned network.
 
-The user should not need to understand the technical decision-making process.
+## 5. Which facilities can be recommended (`config.yaml → facilities`)
+* kept: tier `T1_maternity_hospital`, `T2_general_hospital_unverified`, and `T3_unspecified_hospital_unverified` **only if the name contains "مستشف…" / "hospital"**
+* removed: `T4_needs_review`, names containing *under construction / قيد الإنشاء*, *post office*, *veterinary*; categories veterinary / restricted-access;
+  unreliable coordinates (`coord_reliable = False`); missing or non-Egypt coordinates; hospitals more than 1 km from any road
+* facilities on the same road node are **one location** (e.g. CE00001 / CE00009) and shown once with "also registered at this location"
+* phones come from the `phone` column (as text, so the leading 0 is kept)
 
-She should be able to answer simple questions about her situation and receive understandable guidance about available healthcare facilities.
+`data/processed/` stats and the number of removed rows per reason are visible at `/api/status`.
 
----
-
-# Motivation
-
-Women who regularly follow up with a physician may already have guidance about:
-
-* their pregnancy status
-* potential risks
-* where they should deliver
-* which hospital is appropriate
-* what to do in an emergency
-
-However, not every woman has the same level of access to healthcare.
-
-The project therefore focuses on a population for whom **finding the appropriate healthcare facility can itself be a barrier**.
-
-The goal is not to replace doctors.
-
-Instead, the system aims to provide a technology-based layer of **healthcare access and navigation support** for women who may otherwise have limited information available when they need to make a hospital decision.
-
----
-
-# The Core Idea
-
-The project consists of two major intelligent systems.
-
-## 1. Intelligent Hospital Selection System
-
-This is the **core component** of the project.
-
-The system asks the woman questions about her pregnancy and current condition.
-
-It then evaluates hospitals using multiple factors rather than simply selecting the nearest hospital.
-
-```text
-Pregnant Woman
-       │
-       ▼
-Questions About Pregnancy & Current Situation
-       │
-       ▼
-Maternal Situation Assessment
-       │
-       ▼
-Required Care / Hospital Requirements
-       │
-       ├──────────────────────────────┐
-       │                              │
-       ▼                              ▼
-Hospital Capabilities          Location & Routes
-       │                              │
-       └──────────────┬───────────────┘
-                      ▼
-             Hospital Evaluation
-                      │
-                      ▼
-              Hospital Ranking
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-       Best        Second       Third
-      Option       Option       Option
+## 6. "Why is the nearest hospital so far away?" (missing bridges etc.)
+The app measures **road** time, not straight-line distance. A hospital across a river is only close if a bridge connects the roads.
+Three things help you check this:
+* **Each hospital card shows the straight-line distance** and warns ("Long detour") when the road is 3x longer or more
+  (`search.detour_warn_ratio` in `config.yaml`).
+* **`data/processed/dropped_pieces.csv`** lists every road piece (5+ nodes) that was cut off and removed, with its location,
+  size, gap to the main network and the reason. A cut-off bridge looks like a long thin piece (a few hundred metres to about 2 km).
+* **`tools/diagnose_route.py`** explains one route or one hospital:
 ```
-
----
-
-## 2. Pregnancy LLM Assistant
-
-The second major component is a **Pregnancy LLM Assistant**.
-
-Its purpose is different from the hospital recommendation engine.
-
-The LLM provides an accessible conversational interface where a woman can ask questions about pregnancy.
-
-For example:
-
-> "I'm 30 weeks pregnant. Is it normal to feel this?"
-
-or:
-
-> "What happens during the third trimester?"
-
-or:
-
-> "What should I prepare before going to the hospital?"
-
-The assistant is intended to provide understandable pregnancy-related information and guide the user toward professional medical care when appropriate.
-
-It is **not intended to diagnose diseases or replace a doctor**.
-
-### Separation from the Hospital Selection System
-
-The Pregnancy LLM Assistant is a **separate component** from the Hospital Selection System.
-
-The LLM does not determine which hospital should be recommended.
-
-The Hospital Selection System independently handles:
-
-* Maternal situation assessment
-* Care requirement identification
-* Hospital capability matching
-* Route and accessibility analysis
-* Hospital ranking
-* Alternative hospital selection
-
-The LLM independently handles pregnancy-related questions and information.
-
----
-
-# System Workflow
-
-The main hospital-selection workflow can be represented as:
-
-```text
-┌───────────────────────────────┐
-│       Pregnant Woman          │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│       Initial Questions       │
-│                               │
-│ • Gestational age             │
-│ • Current situation           │
-│ • Emergency status            │
-│ • Known pregnancy factors     │
-│ • Current location            │
-│ • Other relevant information  │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│  Maternal Situation Analysis  │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│ Required Care Profile         │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────┐
-│          Hospital Evaluation            │
-│                                         │
-│ Hospital Capabilities                   │
-│ Hospital Resources                      │
-│ Availability                            │
-│ Distance                                │
-│ Travel Time                             │
-│ Route                                   │
-│ Traffic / Accessibility                 │
-└──────────────────┬──────────────────────┘
-                   │
-                   ▼
-┌───────────────────────────────┐
-│ Hospital Ranking / Selection  │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│ Best Suitable Hospital        │
-│                               │
-│ + Alternative Hospitals       │
-│ + Reasons                     │
-│ + Route Information           │
-└───────────────────────────────┘
+python tools/diagnose_route.py --from 28.0900 30.7500 --to 28.1000 30.7800
+python tools/diagnose_route.py --from 28.0900 30.7500 --facility CE00123
 ```
+  It shows the road vs straight-line distance, why a facility was filtered out, saves the route as GeoJSON
+  (drag it into geojson.io), and lists dropped pieces near the route.
+If a bridge piece was dropped, lower `graph.stitching.min_component_nodes` (e.g. 5) and/or raise `max_gap_m`, delete `data/processed/`, restart.
+If the bridge is not in the dropped list either, it is missing earlier (the OSM extraction in the Road Network notebook).
 
-The Pregnancy LLM has a **separate workflow**:
+## 7. Notes and limits
+* **ETAs are estimates** from assumed speeds per road type (e.g. 30 km/h residential), not traffic.
+* Both algorithms must return identical hospitals/times; the app checks this on every search and warns if they ever differ.
+* Timing measures the search only (not snapping, JSON or drawing). Searches run one at a time on a single worker
+  so timings are clean; a newer search cancels an older Standard run. This is built for a demo or a few users, not heavy traffic.
+* The Egypt outline is approximate (a few km at the coast; slightly generous over the sea).
+* Pins in Egypt but outside the road data (e.g. Cairo) are refused with a message, because the road data covers Upper Egypt only.
+* Not covered: building the parquet files from the raw OSM `.pbf` (that remains in the Road Network notebook).
 
-```text
-┌───────────────────────────────┐
-│            User               │
-│                               │
-│ Pregnancy-related Question    │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│   Pregnancy LLM Assistant     │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│ Pregnancy Information         │
-│ Pregnancy Guidance            │
-│ Health Education              │
-└───────────────────────────────┘
+## 8. Troubleshooting
+| Message | Fix |
+|---|---|
+| "nodes/edges file was not found" | Put the file in `data/` or fix the path in `config.yaml`. |
+| "missing column 'x'" | Fix `columns:` in `config.yaml` (the message lists the columns found). |
+| "Not enough memory" | Close other programs; the full graph needs ~2 GB free while building. |
+| Map is grey | No internet for the tiles; routes and markers still work. |
+| "No facilities remain after applying the filters" | Check `facilities.include_tiers` in `config.yaml`. |
+| Port in use | `python run.py --port 8010` |
+
+## 9. Project layout
 ```
-
----
-
-# Component 1: Maternal Situation Assessment
-
-Before recommending a hospital, the system needs to understand the woman's situation.
-
-The system can ask a series of questions using simple language.
-
-Potential information includes:
-
-### Pregnancy Information
-
-* Gestational age
-* Trimester
-* Single or multiple pregnancy
-* Previous C-section
-* Known pregnancy-related conditions
-* Other relevant known risk factors
-
-### Current Situation
-
-* Emergency or non-emergency
-* Current symptoms or concerns
-* Reason for seeking care
-* Whether labor has started
-* Other relevant user-reported information
-
-### Location
-
-* Current location
-* Governorate
-* District/area
-* GPS coordinates where available
-
----
-
-# Component 2: Hospital Recommendation Engine
-
-This is the core decision-support component.
-
-The system evaluates available hospitals according to the woman's requirements.
-
-A hospital is not evaluated only according to distance.
-
-Instead, the system considers multiple dimensions.
-
-### Hospital suitability factors
-
-Potential factors include:
-
-* Obstetric services
-* Maternity services
-* Emergency obstetric care
-* C-section availability
-* Operating room
-* ICU
-* NICU
-* Blood bank
-* Emergency services
-* Hospital capacity
-* Hospital availability
-* Other required resources
-
-### Accessibility factors
-
-Potential factors include:
-
-* Distance
-* Road-network distance
-* Estimated travel time
-* Route quality/accessibility
-* Traffic conditions
-* Alternative routes
-
----
-
-# Component 3: Route and Accessibility Analysis
-
-A major part of the project is determining how easily the woman can actually reach each hospital.
-
-The system therefore distinguishes between:
-
-### Geographic proximity
-
-> How far is the hospital geographically?
-
-and:
-
-### Real-world accessibility
-
-> How long could it take to reach the hospital through the available road network?
-
-For example:
-
-```text
-Hospital A
-Distance: 8 km
-Travel time: 35 minutes
-
-Hospital B
-Distance: 12 km
-Travel time: 18 minutes
+config.yaml            all paths, column names, filters, thresholds
+run.py / start.bat / start.sh
+app/   main.py (API)  manager.py (build/load/watch)  graph_builder.py  graph_store.py
+       algorithms.py (both Dijkstras)  facilities.py  search_service.py  egypt.py  config.py
+frontend/  index.html  app.js  style.css  vendor/leaflet (bundled, no CDN)
+data/      your input files; data/processed/ is created by the app
+tools/make_sample_data.py  tools/diagnose_route.py   tests/ (pytest)   sample_data/
 ```
-
-Hospital B is farther geographically but may be more accessible in terms of travel time.
-
-The recommendation engine can therefore incorporate **route-based accessibility rather than relying exclusively on straight-line distance**.
-
----
-
-# Component 4: Pregnancy LLM Assistant
-
-The platform will also include a **Pregnancy LLM Assistant**.
-
-This component serves a different purpose from the hospital recommendation engine.
-
-## Main objectives
-
-The LLM can provide:
-
-* Pregnancy information
-* Explanations of pregnancy-related concepts
-* Answers to common questions
-* Guidance about pregnancy stages
-* Preparation information
-* Accessible health education
-* Conversational support
-
-The exact implementation approach for the LLM has not yet been finalized.
-
----
-
-# Hospital Data
-
-The hospital database is one of the most important datasets in the system.
-
-A conceptual hospital record may contain:
-
-| Field             | Description                        |
-| ----------------- | ---------------------------------- |
-| hospital_id       | Unique hospital identifier         |
-| hospital_name     | Hospital name                      |
-| hospital_type     | Public/private/university/etc.     |
-| governorate       | Administrative region              |
-| district          | Local administrative area          |
-| latitude          | Geographic latitude                |
-| longitude         | Geographic longitude               |
-| obstetrics        | Obstetric service availability     |
-| maternity         | Maternity service availability     |
-| c_section         | C-section capability               |
-| operating_room    | Operating room availability        |
-| ICU               | ICU availability                   |
-| NICU              | NICU availability                  |
-| blood_bank        | Blood bank availability            |
-| emergency_service | Emergency service availability     |
-| capacity          | Available capacity information     |
-| availability      | Available availability information |
-
-Additional variables may be added as reliable data becomes available.
-
-The final system will use the minimum information necessary for the defined use cases.
-
----
-
-# Recommendation Logic
-
-The recommendation process will consist of multiple stages.
-
-## Stage 1 — Understand the user's situation
-
-```text
-User Answers
-      ↓
-Structured Maternal Information
-```
-
-## Stage 2 — Determine required hospital characteristics
-
-```text
-Maternal Information
-      ↓
-Care Requirement Profile
-```
-
-For example:
-
-```text
-Emergency: Yes
-Obstetric Care: Required
-Surgical Capability: Required
-Critical Care: Potentially Required
-```
-
-The exact mapping will be based on the project's defined clinical rules.
-
----
-
-## Stage 3 — Evaluate hospital capabilities
-
-Hospitals are compared against the required care profile.
-
-```text
-Required:
-✓ Obstetrics
-✓ C-section
-✓ ICU
-
-Hospital A:
-✓ Obstetrics
-✓ C-section
-✓ ICU
-→ Eligible
-
-Hospital B:
-✓ Obstetrics
-✓ C-section
-✗ ICU
-→ Not suitable for this requirement
-```
-
----
-
-## Stage 4 — Evaluate accessibility
-
-Eligible hospitals are then evaluated using:
-
-```text
-Distance
-+
-Travel Time
-+
-Route
-+
-Traffic / Accessibility
-```
-
----
-
-## Stage 5 — Generate ranked alternatives
-
-The system does not need to return only one hospital.
-
-Instead, it can provide:
-
-```text
-1. Most suitable hospital
-2. Second suitable hospital
-3. Third suitable hospital
-```
-
-Each result can include:
-
-* Hospital name
-* Relevant capabilities
-* Estimated travel time
-* Distance
-* Route
-* Why it was selected
-* Important limitations in the available data
-
-This gives the user alternatives if the first facility cannot be reached or cannot accept the patient.
-
----
-
-# Example Scenario
-
-Consider a hypothetical woman:
-
-> 34 weeks pregnant, currently experiencing an urgent situation, located in a particular district.
-
-The system asks the necessary questions and creates a structured representation.
-
-### Step 1 — Situation
-
-```text
-Gestational Age: 34 weeks
-Emergency: Yes
-Location: X
-```
-
-### Step 2 — Required care profile
-
-The system identifies the relevant facility requirements based on the defined rules.
-
-### Step 3 — Hospital filtering
-
-```text
-Hospital A
-✓ Required maternal service
-✓ Required surgical capability
-✓ Required critical-care capability
-
-Hospital B
-✓ Maternal service
-✗ Required critical-care capability
-
-Hospital C
-✓ Required maternal service
-✓ Required surgical capability
-✓ Required critical-care capability
-```
-
-Hospital B may therefore be excluded from the candidate set for this particular situation.
-
-### Step 4 — Accessibility
-
-```text
-Hospital A
-Distance: 10 km
-Travel Time: 18 min
-
-Hospital C
-Distance: 7 km
-Travel Time: 31 min
-```
-
-The system considers both suitability and accessibility rather than choosing based only on distance.
-
-### Step 5 — Output
-
-The user receives:
-
-```text
-Recommended Hospital:
-Hospital A
-
-Alternative:
-Hospital C
-
-Why Hospital A:
-• Meets the required facility capabilities
-• Estimated travel time is 18 minutes
-• Suitable route from the current location
-
-Alternative Hospital:
-Hospital C
-• Meets the required capabilities
-• Longer estimated travel time
-```
-
-The exact ranking methodology will be defined and evaluated during development.
-
----
-
-# System Architecture
-
-The platform consists of two separate intelligent components.
-
-The **Hospital Selection System** handles the hospital decision and navigation process, while the **Pregnancy LLM Assistant** independently handles pregnancy-related questions and information.
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│              INTELLIGENT MATERNAL HEALTHCARE PLATFORM               │
-│                                                                     │
-│  ┌──────────────────────────────┐    ┌────────────────────────────┐ │
-│  │   HOSPITAL SELECTION SYSTEM  │    │  PREGNANCY LLM ASSISTANT   │ │
-│  │                              │    │                            │ │
-│  │  Maternal Assessment         │    │  Pregnancy Questions       │ │
-│  │           │                  │    │           │                │ │
-│  │           ▼                  │    │           ▼                │ │
-│  │  Care Requirement            │    │  Pregnancy-focused         │ │
-│  │  Assessment                  │    │  LLM                       │ │
-│  │           │                  │    │           │                │ │
-│  │           ▼                  │    │           ▼                │ │
-│  │  Hospital Capabilities       │    │  Information & Guidance    │ │
-│  │           │                  │    │                            │ │
-│  │           ▼                  │    └────────────────────────────┘ │
-│  │  Route & Accessibility       │                                   │
-│  │           │                  │                                   │
-│  │           ▼                  │                                   │
-│  │  Decision & Ranking          │                                   │
-│  │           │                  │                                   │
-│  │           ▼                  │                                   │
-│  │  Recommended Hospitals       │                                   │
-│  │  + Alternatives + Routes     │                                   │
-│  └──────────────────────────────┘                                   │
-│                                                                     │
-│                 TWO SEPARATE INTELLIGENT COMPONENTS                 │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-# Recommendation System Evaluation
-
-The recommendation system can be evaluated using:
-
-* Recommendation relevance
-* Capability matching accuracy
-* Constraint satisfaction
-* Ranking consistency
-* Accessibility-aware selection
-* Comparison against a nearest-hospital baseline
-
-For example:
-
-### Baseline
-
-```text
-Nearest Hospital
-```
-
-### Proposed approach
-
-```text
-Patient Situation
-+
-Hospital Capability
-+
-Accessibility
-+
-Travel Time
-```
-
-The experiment can investigate how the proposed approach differs from a simple proximity-based approach.
-
----
-
-# LLM Evaluation
-
-The Pregnancy LLM can be evaluated using:
-
-* Answer relevance
-* Factual consistency
-* Hallucination rate
-* Safety
-* Response quality
-* Pregnancy-domain coverage
-
-The information-extraction component can additionally be evaluated for:
-
-* Field extraction accuracy
-* Structured output accuracy
-* Missing information detection
-* Consistency across similar inputs
+API: `GET /api/status`, `GET /api/config`, `GET /api/facilities`, `POST /api/search {lat, lon}`,
+`GET /api/baseline/{job_id}`, `POST /api/admin/rebuild`. Tests: `pip install -r requirements-dev.txt && pytest -q`.

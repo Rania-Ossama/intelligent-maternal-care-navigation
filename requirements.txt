@@ -1,0 +1,7 @@
+fastapi>=0.110
+uvicorn>=0.29
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+scipy>=1.11
+pyyaml>=6.0

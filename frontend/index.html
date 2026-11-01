@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital Finder – Upper Egypt</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">+</span>
+      <div>
+        <h1>Nearest Hospital Finder</h1>
+        <p id="graphInfo" class="sub">Upper Egypt road network</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel" id="panel">
+      <section class="card">
+        <h2><span class="step">1</span> Patient location</h2>
+        <p class="hint">Click the map to drop a pin (inside Egypt only). Drag it, or type the coordinates below.</p>
+        <div class="fields">
+          <label>Latitude
+            <input id="lat" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 27.18090">
+          </label>
+          <label>Longitude
+            <input id="lon" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 31.18370">
+          </label>
+        </div>
+        <p id="fieldError" class="error" role="alert" hidden></p>
+        <div class="buttons">
+          <button id="findBtn" class="primary" type="button" disabled>Find nearest hospitals</button>
+          <button id="locBtn" class="secondary" type="button" title="Use my current location">My location</button>
+        </div>
+      </section>
+
+      <section id="alerts" aria-live="polite"></section>
+      <section id="results" aria-live="polite"></section>
+      <section id="moreWrap"></section>
+      <section id="timing"></section>
+
+      <section class="card small">
+        <label class="check"><input type="checkbox" id="showFacilities" checked autocomplete="off"> Show all hospitals considered <span id="facCount"></span></label>
+        <p class="note">Travel times are <strong>estimates</strong> based on assumed speeds per road type, not live traffic. Always call ahead and follow local emergency guidance.</p>
+      </section>
+    </aside>
+
+    <div class="mapwrap">
+      <div id="map" aria-label="Map of Egypt"></div>
+      <div id="toast" class="toast" role="status" hidden></div>
+    </div>
+  </main>
+
+  <div id="overlay" class="overlay">
+    <div class="overlay-box">
+      <div class="spinner" id="overlaySpinner"></div>
+      <h2 id="overlayTitle">Starting…</h2>
+      <p id="overlayText">Connecting to the server.</p>
+      <div class="bar" id="overlayBarWrap"><div id="overlayBar"></div></div>
+      <p id="overlayMeta" class="meta"></p>
+      <button id="retryBtn" class="primary" type="button" hidden>Try again</button>
+    </div>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
