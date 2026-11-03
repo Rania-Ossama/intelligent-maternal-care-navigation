@@ -1,4 +1,5 @@
 data/*
+!data/.gitkeep
 *.parquet
 !sample_data/*.parquet      # the tiny test files are fine to keep
 *.pbf
