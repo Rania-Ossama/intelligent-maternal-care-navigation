@@ -100,12 +100,31 @@
       center: cfg.map.center, zoom: cfg.map.zoom, minZoom: 5, maxZoom: 18,
       maxBounds: bounds.pad(0.15), maxBoundsViscosity: 1.0, zoomControl: true,
     });
-    const tiles = L.tileLayer(cfg.map.tile_url, { maxZoom: 19, attribution: cfg.map.tile_attribution });
+    const tt = cfg.tomtom || {};
+    const tiles = tt.tiles && tt.map_key
+      ? L.tileLayer(`https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${encodeURIComponent(tt.map_key)}`,
+          { maxZoom: 18, attribution: "&copy; TomTom" })
+      : L.tileLayer(cfg.map.tile_url, { maxZoom: 19, attribution: cfg.map.tile_attribution });
     let tileErrors = 0;
     tiles.on("tileerror", () => {
       if (++tileErrors === 5) toast("Map tiles can't be loaded (no internet?). Markers and routes still work.", 7000);
     });
     tiles.addTo(map);
+
+    // optional TomTom live-traffic overlay (checkbox in the side panel)
+    const trafficBox = $("showTraffic");
+    if (trafficBox) {
+      if (tt.traffic_overlay && tt.map_key) {
+        const trafficLayer = L.tileLayer(
+          `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${encodeURIComponent(tt.map_key)}`,
+          { maxZoom: 18, opacity: 0.75, attribution: "&copy; TomTom Traffic" });
+        trafficBox.addEventListener("change", () => {
+          if (trafficBox.checked) trafficLayer.addTo(map); else map.removeLayer(trafficLayer);
+        });
+      } else {
+        trafficBox.closest("label").hidden = true;
+      }
+    }
 
     // grey mask everywhere except Egypt, so it is obvious where a pin may go
     const world = [[5, 5], [5, 60], [50, 60], [50, 5]];   // generous box around Egypt (map is locked to Egypt anyway)
@@ -276,6 +295,9 @@
     if (h.detour) {
       card.append(el("div", { class: "detour", text: "↻ Long detour: a river or a missing road link may be forcing a roundabout route." }));
     }
+    if (cfg.tomtom && cfg.tomtom.live_eta) {
+      card.append(el("div", { class: "live", id: "live-" + i, text: "Live traffic: checking…" }));
+    }
     if (f.address) card.append(el("div", { class: "detail" }, el("span", { class: "lbl", text: "Address: " }), f.address));
     card.append(el("div", { class: "detail" }, el("span", { class: "lbl", text: "Phone: " }), phoneLinks(f.phones, f.phone)));
     if (f.snap_m > 250) {
@@ -345,6 +367,40 @@
     r.line.bringToFront();
   }
 
+  // ------------------------------------------------- TomTom live-traffic ETA
+  function minText(sec) {
+    const m = Math.max(1, Math.round(sec / 60));
+    return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
+  }
+
+  async function addLiveTraffic(pin, hospitals, startIndex) {
+    if (!(cfg.tomtom && cfg.tomtom.live_eta)) return;
+    const token = searchToken;
+    await Promise.all(hospitals.map(async (h, k) => {
+      const i = startIndex + k;
+      const box = document.getElementById("live-" + i);
+      if (!box) return;
+      try {
+        const q = new URLSearchParams({ from_lat: pin.lat, from_lon: pin.lon,
+                                        to_lat: h.facility.lat, to_lon: h.facility.lon });
+        const t = await api("/api/tomtom/route?" + q);
+        if (token !== searchToken || !document.body.contains(box)) return;     // a newer search replaced this one
+        const delay = Math.round(t.traffic_delay_seconds / 60);
+        box.textContent = `Live traffic (TomTom): ${minText(t.eta_seconds)} · ${t.distance_km.toFixed(1)} km` +
+                          (delay >= 1 ? ` · +${delay} min traffic delay` : "");
+        box.classList.toggle("slow", t.eta_seconds > ((cfg.search && cfg.search.eta_warn_minutes) || 60) * 60);
+        h.tomtom = t;
+        const r = routeLayers[i];
+        if (r && t.route && t.route.length) {                                    // dashed second line = TomTom route
+          L.polyline(t.route, { color: "#111827", weight: 3, opacity: 0.8, dashArray: "2 7", interactive: false }).addTo(r.group);
+        }
+      } catch (err) {
+        box.textContent = "Live traffic: not available";
+        box.classList.add("off");
+      }
+    }));
+  }
+
   function renderResults(data) {
     $("alerts").replaceChildren(...data.warnings.map((w) => el("div", { class: "alert " + w.level, role: "alert" }, w.message)));
     const box = $("results");
@@ -357,6 +413,7 @@
     renderTiming(data, data.baseline);
     current = { data, moreUsed: false, loadingMore: false };
     renderMoreButton();
+    addLiveTraffic(data.pin, data.hospitals, 0);
   }
 
   // "Show more hospitals": allowed ONCE per search. It adds the next `more_results` hospitals.
@@ -392,6 +449,7 @@
       } else {
         d.hospitals.forEach((h, k) => $("results").append(hospitalCard(h, start + k, d.threshold_min)));
         addMapLayers(d, start);
+        addLiveTraffic(cur.data.pin, d.hospitals, start);
         cur.data.hospitals.push(...d.hospitals);
       }
     } catch (err) {

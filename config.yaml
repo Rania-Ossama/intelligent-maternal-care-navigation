@@ -143,3 +143,14 @@ map:
   tile_attribution: "&copy; OpenStreetMap contributors"
   center: [27.0, 31.0]
   zoom: 7
+
+# ---------------------------------------------------------------------
+#  TomTom (optional). Keys are NOT stored here - put them in the .env file
+#  (see .env.example). If no key is found the app works exactly as before.
+# ---------------------------------------------------------------------
+tomtom:
+  enabled: true
+  timeout_s: 8
+  use_tomtom_tiles: true        # base map from TomTom instead of OpenStreetMap
+  traffic_overlay: true         # show the "Live traffic on map" checkbox
+  live_eta: true                # ask TomTom for the live-traffic time of each hospital found

@@ -169,3 +169,8 @@ button.more:disabled { opacity: .6; cursor: wait; }
 .govonly { visibility: hidden; }
 .govlist li:hover .govonly, .govlist li:focus-within .govonly { visibility: visible; }
 @media (hover: none) { .govonly { visibility: visible; } }
+
+/* TomTom live-traffic line on a hospital card */
+.live { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--blue); }
+.live.slow { color: var(--danger); }
+.live.off { color: var(--muted); font-weight: 400; }

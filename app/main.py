@@ -15,6 +15,7 @@ from .egypt import EGYPT_POLYGON, LAT_MAX, LAT_MIN, LON_MAX, LON_MIN
 from .facilities import FacilityError
 from .manager import GraphManager
 from .search_service import ApiError, SearchService
+from . import tomtom
 
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
@@ -59,10 +60,24 @@ def create_app(config_path: str | Path | None = None) -> FastAPI:
             "message": "Latitude must be a number between -90 and 90 and longitude between -180 and 180."}})
 
     # --------------------------------------------------------------- API
+    def tomtom_cfg() -> dict:
+        t = settings.raw.get("tomtom") or {}
+        on = bool(t.get("enabled", False))
+        key = tomtom.map_key()
+        tiles = on and bool(t.get("use_tomtom_tiles", True)) and bool(key)
+        overlay = on and bool(t.get("traffic_overlay", True)) and bool(key)
+        return {
+            "live_eta": on and bool(t.get("live_eta", True)) and bool(tomtom.routing_key()),
+            "tiles": tiles,
+            "traffic_overlay": overlay,
+            "map_key": key if (tiles or overlay) else None,
+        }
+
     @app.get("/api/config")
     def get_config():
         s = settings
         return {
+            "tomtom": tomtom_cfg(),
             "egypt_polygon": [[lon, lat] for lon, lat in EGYPT_POLYGON],
             "egypt_bounds": [[LAT_MIN, LON_MIN], [LAT_MAX, LON_MAX]],
             "map": s.map,
@@ -94,6 +109,16 @@ def create_app(config_path: str | Path | None = None) -> FastAPI:
     @app.post("/api/search")
     async def post_search(req: SearchRequest):
         return await service.search(req.lat, req.lon, req.more)
+
+    @app.get("/api/tomtom/route")
+    async def tomtom_route(from_lat: float, from_lon: float, to_lat: float, to_lon: float):
+        t = settings.raw.get("tomtom") or {}
+        if not (t.get("enabled") and t.get("live_eta", True)):
+            raise ApiError(404, "tomtom_off", "TomTom live ETA is turned off in config.yaml.")
+        try:
+            return await tomtom.live_route(from_lat, from_lon, to_lat, to_lon, float(t.get("timeout_s", 8)))
+        except tomtom.TomTomError as exc:
+            raise ApiError(502, "tomtom_error", str(exc)) from exc
 
     @app.get("/api/baseline/{job_id}")
     def get_baseline(job_id: str):
