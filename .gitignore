@@ -1,7 +1,9 @@
 data/*
+boundaries_data/*
 !data/.gitkeep
+!boundaries_data/.gitkeep
 *.parquet
-!sample_data/*.parquet      # the tiny test files are fine to keep
+!sample_data/*.parquet      
 *.pbf
 *.osm
 *.gdb/
