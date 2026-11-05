@@ -137,7 +137,8 @@ class SearchService:
             area = (f" The road data covers roughly lat {b[1]:.2f}–{b[3]:.2f}, lon {b[0]:.2f}–{b[2]:.2f} "
                     f"(Upper Egypt). If you typed the coordinates, check that latitude and longitude are not swapped." if b else "")
             raise ApiError(400, "outside_coverage",
-                           f"No road network within {snap_m / 1000:.0f} km of this pin.{area}", snap_m=round(snap_m))
+                           f"No coverage here yet: there is no road data within {snap_m / 1000:.0f} km of this pin.{area}",
+                           snap_m=round(snap_m))
 
         res = enhanced_dijkstra(graph, source, fac.targets, k)
         enhanced_ms = res.elapsed_s * 1000.0

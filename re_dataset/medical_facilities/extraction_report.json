@@ -1,0 +1,246 @@
+{
+    "extraction_date": "2026-11-04T19:06:57.847682+00:00",
+    "total_facilities": 2356,
+    "facility_type_counts": {
+        "pharmacy": 883,
+        "hospital": 641,
+        "clinic": 451,
+        "doctor": 107,
+        "optician": 74,
+        "dentist": 66,
+        "laboratory": 42,
+        "nursing_home": 19,
+        "unclassified_healthcare": 16,
+        "medical_supply": 15,
+        "centre": 9,
+        "hyperbaric_chamber": 8,
+        "physiotherapist": 7,
+        "hospice": 3,
+        "counselling": 3,
+        "sample_collection": 3,
+        "optometrist": 2,
+        "syndicate": 1,
+        "center": 1,
+        "مركز_صحي": 1,
+        "alternative": 1,
+        "psychotherapist": 1,
+        "community_health_worker": 1,
+        "rehabilitation": 1
+    },
+    "osm_type_counts": {
+        "node": 2029,
+        "way": 320,
+        "relation": 7
+    },
+    "valid_coordinates": 2356,
+    "outside_egypt_bbox": 0,
+    "repaired_geometries": 0,
+    "missing_names": 505,
+    "most_common_osm_tags": [
+        [
+            "visible",
+            2356
+        ],
+        [
+            "amenity",
+            2142
+        ],
+        [
+            "lat",
+            2029
+        ],
+        [
+            "lon",
+            2029
+        ],
+        [
+            "name",
+            1851
+        ],
+        [
+            "healthcare",
+            1410
+        ],
+        [
+            "name:ar",
+            1190
+        ],
+        [
+            "name:en",
+            731
+        ],
+        [
+            "addr:street",
+            395
+        ],
+        [
+            "phone",
+            308
+        ],
+        [
+            "opening_hours",
+            280
+        ],
+        [
+            "healthcare:speciality",
+            262
+        ],
+        [
+            "addr:housenumber",
+            221
+        ],
+        [
+            "operator",
+            172
+        ],
+        [
+            "addr:city",
+            160
+        ],
+        [
+            "addr:postcode",
+            143
+        ],
+        [
+            "check_date",
+            142
+        ],
+        [
+            "contact:facebook",
+            135
+        ],
+        [
+            "emergency",
+            125
+        ],
+        [
+            "shop",
+            112
+        ],
+        [
+            "mobile",
+            109
+        ],
+        [
+            "website",
+            107
+        ],
+        [
+            "dispensing",
+            95
+        ],
+        [
+            "building",
+            94
+        ],
+        [
+            "addr:street:en",
+            90
+        ],
+        [
+            "addr:country",
+            87
+        ],
+        [
+            "addr:district:en",
+            87
+        ],
+        [
+            "alt_name",
+            86
+        ],
+        [
+            "addr:province:en",
+            86
+        ],
+        [
+            "addr:district",
+            84
+        ],
+        [
+            "addr:province",
+            84
+        ],
+        [
+            "addr:subdistrict",
+            73
+        ],
+        [
+            "addr:subdistrict:en",
+            73
+        ],
+        [
+            "operator:type",
+            71
+        ],
+        [
+            "email",
+            66
+        ],
+        [
+            "wheelchair",
+            54
+        ],
+        [
+            "alt_name:ar",
+            51
+        ],
+        [
+            "level",
+            49
+        ],
+        [
+            "short_name",
+            47
+        ],
+        [
+            "alt_name:en",
+            38
+        ],
+        [
+            "short_name:en",
+            37
+        ],
+        [
+            "payment:cash",
+            33
+        ],
+        [
+            "internet_access",
+            31
+        ],
+        [
+            "contact:whatsapp",
+            29
+        ],
+        [
+            "description",
+            27
+        ],
+        [
+            "drive_through",
+            27
+        ],
+        [
+            "payment:credit_cards",
+            25
+        ],
+        [
+            "payment:debit_cards",
+            19
+        ],
+        [
+            "contact:instagram",
+            18
+        ],
+        [
+            "note",
+            17
+        ]
+    ],
+    "output_files": [
+        "egypt_medical_facilities.parquet",
+        "egypt_medical_facilities.csv",
+        "facilities_validation_issues.csv"
+    ]
+}

@@ -13,6 +13,9 @@ paths:
   edges: data/Upper_Egypt_edges_weighted.parquet
   facilities: data/facilities_flagged.csv
 
+  # --- Governorate boundaries (GeoJSON): the ONE governorate-level file. Other files in the folder (districts etc.) are never read.
+  governorates: boundaries_data/processed/egypt_governorates.geojson
+
   # --- OUTPUT folder: the app creates the processed graph here
   #     (graph_nodes.parquet, graph_edges.parquet, graph_meta.json,
   #      stitched_edges.csv). Safe to delete; it is rebuilt automatically.
@@ -154,3 +157,22 @@ tomtom:
   use_tomtom_tiles: true        # base map from TomTom instead of OpenStreetMap
   traffic_overlay: true         # show the "Live traffic on map" checkbox
   live_eta: true                # ask TomTom for the live-traffic time of each hospital found
+
+# ---------------------------------------------------------------------
+#  Governorate boundaries on the map + the "Full Egypt" switch
+# ---------------------------------------------------------------------
+governorates:
+  name_field: adm1_name          # English name property in the GeoJSON
+  name_ar_field: adm1_name1      # Arabic name property
+  simplify_deg: 0.002            # thins the outlines for speed (0.002 deg ~ 200 m). 0 = keep every point
+  # The governorates the app covers today. The "Full Egypt" switch is OFF by default and
+  # shows only these; switching it on shows every governorate in the file.
+  # Add a name here (as written in the GeoJSON, English or Arabic) when you add a new region.
+  upper_egypt:
+    - Assiut
+    - Aswan
+    - Beni Suef
+    - Luxor
+    - Minya
+    - Qena
+    - Sohag

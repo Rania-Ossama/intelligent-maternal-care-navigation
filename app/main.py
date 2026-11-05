@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .config import PROJECT_ROOT, load_settings
+from .boundaries import canonical_name, load_boundaries
 from .egypt import EGYPT_POLYGON, LAT_MAX, LAT_MIN, LON_MAX, LON_MIN
 from .facilities import FacilityError
 from .manager import GraphManager
@@ -73,6 +74,24 @@ def create_app(config_path: str | Path | None = None) -> FastAPI:
             "map_key": key if (tiles or overlay) else None,
         }
 
+    gcfg = settings.gov
+    boundaries = load_boundaries(
+        settings.governorates_path, list(gcfg.get("upper_egypt") or []),
+        gcfg.get("name_field", "adm1_name"), gcfg.get("name_ar_field", "adm1_name1"),
+        float(gcfg.get("simplify_deg", 0.002)))
+    print(f"[boundaries] {len(boundaries['features'])} governorates from {boundaries['source']}", flush=True)
+    if boundaries["message"]:
+        print(f"[boundaries] {boundaries['message']}", flush=True)
+    if boundaries["available"] and boundaries["upper_missing"]:
+        print(f"[boundaries] WARNING: these upper_egypt names were not found in the file: "
+              f"{', '.join(boundaries['upper_missing'])}", flush=True)
+
+    @app.get("/api/boundaries")
+    def get_boundaries():
+        return {"available": boundaries["available"], "message": boundaries["message"],
+                "upper_missing": boundaries["upper_missing"],
+                "geojson": {"type": "FeatureCollection", "features": boundaries["features"]}}
+
     @app.get("/api/config")
     def get_config():
         s = settings
@@ -102,7 +121,8 @@ def create_app(config_path: str | Path | None = None) -> FastAPI:
         except FacilityError as exc:
             raise ApiError(503, "facilities_unavailable", str(exc)) from exc
         return {"facilities": [{"id": r["id"], "name": r["name"], "lat": r["lat"], "lon": r["lon"],
-                                "tier_label": r["tier_label"], "governorate": r["governorate"]}
+                                "tier_label": r["tier_label"],
+                                "governorate": (canonical_name(boundaries["index"], r["governorate"]) or r["governorate"])}
                                for r in idx.rows],
                 "stats": idx.stats}
 

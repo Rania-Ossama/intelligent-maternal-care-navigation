@@ -18,6 +18,7 @@
   let resultLayer = null;
   let facilityLayer = null;
   let coverageLayer = null;
+  let govBoundaryLayer = null;    // governorate outlines (see initBoundaries)
   let routeLayers = [];           // per hospital: {route, connectors, marker}
   let facilitiesLoadedFor = null;
   let current = null;             // the search on screen: {data, moreUsed, loadingMore}
@@ -141,6 +142,81 @@
     map.on("click", (e) => placeFromMap(e.latlng.lat, e.latlng.lng));
   }
 
+  // ------------------------------------------- governorate borders + "Full Egypt"
+  // Borders are drawn (dashed blue, no fill, no label) only for governorates ticked in the filter.
+  // Full Egypt OFF (default): the filter lists only the governorates covered today (config.yaml ->
+  // governorates.upper_egypt). ON: it lists every governorate in the boundaries file.
+  let govFeatures = [];           // [{name, upper, bounds, polys}]
+  let govBorders = new Map();     // name -> Leaflet layer with that governorate's outline
+  let borderLayer = null;
+  let fullEgypt = false;
+  let upperBounds = null, allBounds = null;
+
+  function ringContains(ring, lat, lon) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function featureContains(ft, lat, lon) {
+    return ft.polys.some((rings) => ringContains(rings[0], lat, lon) && !rings.slice(1).some((h) => ringContains(h, lat, lon)));
+  }
+  function governorateAt(lat, lon) {
+    const ft = govFeatures.find((f) => f.bounds.contains([lat, lon]) && featureContains(f, lat, lon));
+    return ft ? ft.name : null;
+  }
+
+  // governorates that may appear in the filter right now
+  function visibleBoundaryNames() {
+    return govFeatures.filter((f) => fullEgypt || f.upper).map((f) => f.name);
+  }
+
+  async function initBoundaries() {
+    const box = $("fullEgypt"), note = $("fullEgyptNote");
+    let data;
+    try {
+      data = await api("/api/boundaries");
+    } catch (err) {
+      note.textContent = "(unavailable)";
+      return;
+    }
+    if (!data.available) {
+      note.textContent = "(boundaries file missing)";
+      box.title = data.message || "";
+      if (data.message) toast(data.message, 9000);
+      return;
+    }
+    const feats = data.geojson.features;
+    const anyUpper = feats.some((f) => f.properties.upper);
+    if (data.upper_missing && data.upper_missing.length)
+      console.warn("Governorates from config not found in the boundaries file:", data.upper_missing);
+
+    borderLayer = L.layerGroup().addTo(map);
+    govFeatures = feats.map((f) => {
+      const lyr = L.geoJSON(f, {
+        interactive: false,
+        style: () => ({ color: "#2563eb", weight: 2, dashArray: "7 6", fill: false, opacity: 0.95 }),
+      });
+      govBorders.set(f.properties.name, lyr);
+      return { name: f.properties.name, upper: anyUpper ? !!f.properties.upper : true, bounds: lyr.getBounds(), polys: f.geometry.coordinates };
+    });
+    const up = govFeatures.filter((f) => f.upper), all = govFeatures;
+    upperBounds = up.length ? L.latLngBounds(up.map((f) => f.bounds.getSouthWest()).concat(up.map((f) => f.bounds.getNorthEast()))) : null;
+    allBounds = L.latLngBounds(all.map((f) => f.bounds.getSouthWest()).concat(all.map((f) => f.bounds.getNorthEast())));
+
+    box.disabled = up.length === all.length;
+    if (box.disabled) note.textContent = "(all governorates already shown)";
+    box.addEventListener("change", () => {
+      fullEgypt = box.checked;
+      syncGovernorates();
+      const b = fullEgypt ? allBounds : upperBounds;
+      if (b && b.isValid()) map.fitBounds(b.pad(0.05));
+    });
+    syncGovernorates();
+  }
+
   function pinIcon() { return new L.Icon.Default(); }
 
   function setPin(lat, lon, pan) {
@@ -248,6 +324,10 @@
 
   function showError(err) {
     $("results").replaceChildren();
+    if (err.code === "outside_coverage" && lastValid) {
+      const g = governorateAt(lastValid[0], lastValid[1]);
+      if (g) err = { ...err, message: `No coverage in ${g} yet. ${err.message.replace(/^No coverage here yet:\s*/, "")}` };
+    }
     const level = err.code === "outside_egypt" || err.code === "outside_coverage" ? "warning" : "danger";
     $("alerts").replaceChildren(el("div", { class: "alert " + level, role: "alert" }, err.message || "Something went wrong."));
   }
@@ -622,16 +702,28 @@
         .bindTooltip(f.name, { direction: "top" }).addTo(grp.layer);
     });
     govTotal = facilities.length;
-    const keep = new Set([...govGroups.keys()].filter((g) => govSelected.has(g) || !govKnown.has(g)));
-    govSelected = keep;
-    govGroups.forEach((_, g) => govKnown.add(g));
-    renderGovList();
-    applyGovSelection();
+    syncGovernorates();
   }
 
+  // names shown in the filter: hospital groups + boundary governorates, limited by the Full Egypt switch
   function govNames() {
-    return [...govGroups.keys()].sort((a, b) =>
+    const bound = new Set(govFeatures.map((f) => f.name));
+    const visible = new Set(visibleBoundaryNames());
+    const names = new Set(visible);
+    govGroups.forEach((_, g) => { if (!bound.has(g) || visible.has(g)) names.add(g); });
+    return [...names].sort((a, b) =>
       a === NO_GOV ? 1 : b === NO_GOV ? -1 : a.localeCompare(b));
+  }
+  const govCount = (g) => (govGroups.has(g) ? govGroups.get(g).count : 0);
+
+  // keep selection / list / borders in step after hospitals load or the switch changes
+  function syncGovernorates() {
+    const names = new Set(govNames());
+    govSelected = new Set([...govSelected].filter((g) => names.has(g)));
+    [...govKnown].forEach((g) => { if (!names.has(g)) govKnown.delete(g); });
+    names.forEach((g) => { if (!govKnown.has(g)) { govKnown.add(g); govSelected.add(g); } });   // new ones start ticked
+    renderGovList();
+    applyGovSelection();
   }
 
   function renderGovList() {
@@ -644,12 +736,12 @@
       } });
       const row = el("label", { class: "govrow" }, cb,
         el("span", { class: "govname", dir: "auto", text: g, title: g }),
-        el("span", { class: "govcount", text: String(govGroups.get(g).count), "aria-label": `${govGroups.get(g).count} hospitals` }));
+        el("span", { class: "govcount", text: String(govCount(g)), "aria-label": `${govCount(g)} hospitals` }));
       const only = el("button", { type: "button", class: "linkbtn govonly", text: "only",
         title: `Show only ${g}`, onclick: () => { govSelected = new Set([g]); applyGovSelection(); } });
       ul.append(el("li", {}, row, only));
     });
-    $("govBtn").disabled = !$("showFacilities").checked || govGroups.size === 0;
+    $("govBtn").disabled = govNames().length === 0;
   }
 
   // show/hide each governorate's markers, then refresh the checkboxes, the button text and the count
@@ -660,8 +752,14 @@
       if (on) { shown += grp.count; if (!facilityLayer.hasLayer(grp.layer)) facilityLayer.addLayer(grp.layer); }
       else if (facilityLayer.hasLayer(grp.layer)) facilityLayer.removeLayer(grp.layer);
     });
+    // dashed border only for governorates that are ticked in the filter
+    govBorders.forEach((lyr, g) => {
+      const on = govSelected.has(g);
+      if (on && !borderLayer.hasLayer(lyr)) borderLayer.addLayer(lyr);
+      else if (!on && borderLayer.hasLayer(lyr)) borderLayer.removeLayer(lyr);
+    });
     document.querySelectorAll("#govList input[data-gov]").forEach((cb) => { cb.checked = govSelected.has(cb.dataset.gov); });
-    const n = govSelected.size, all = govGroups.size;
+    const n = govSelected.size, all = govNames().length;
     $("govBtnText").textContent = !all ? "Filter by governorate"
       : n === all ? `All governorates (${all})`
       : n === 0 ? "No governorate selected"
@@ -678,7 +776,7 @@
 
   function initGovFilter() {
     $("govBtn").addEventListener("click", () => setGovPanel($("govPanel").hidden));
-    $("govAll").addEventListener("click", () => { govSelected = new Set(govGroups.keys()); applyGovSelection(); });
+    $("govAll").addEventListener("click", () => { govSelected = new Set(govNames()); applyGovSelection(); });
     $("govNone").addEventListener("click", () => { govSelected = new Set(); applyGovSelection(); });
     document.addEventListener("click", (e) => { if (!e.target.closest(".govfilter")) setGovPanel(false); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setGovPanel(false); });
@@ -731,6 +829,7 @@
       return;
     }
     initMap();
+    initBoundaries();
 
     $("lat").addEventListener("change", () => commitInputs(true));
     $("lon").addEventListener("change", () => commitInputs(true));
@@ -753,8 +852,6 @@
     $("findBtn").addEventListener("click", runSearch);
     $("showFacilities").addEventListener("change", (e) => {
       if (e.target.checked) facilityLayer.addTo(map); else map.removeLayer(facilityLayer);
-      $("govBtn").disabled = !e.target.checked || govGroups.size === 0;   // filter only matters while the dots are shown
-      if (!e.target.checked) setGovPanel(false);
     });
     initGovFilter();
     $("retryBtn").addEventListener("click", async () => {

@@ -39,6 +39,7 @@ class Settings:
         self.edges_path = self._resolve(p["edges"])
         self.facilities_path = self._resolve(p["facilities"])
         self.processed_dir = self._resolve(p["processed_dir"])
+        self.governorates_path = self._resolve(p.get("governorates", "boundaries_data/processed/egypt_governorates.geojson"))
 
         self.cols = raw["columns"]
         self.graph = raw["graph"]
@@ -46,6 +47,7 @@ class Settings:
         self.search = raw["search"]
         self.server = raw["server"]
         self.map = raw["map"]
+        self.gov = raw.get("governorates") or {}
 
         # processed files (created by the app)
         self.proc_nodes = self.processed_dir / "graph_nodes.parquet"
