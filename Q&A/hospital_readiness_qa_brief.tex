@@ -1,0 +1,200 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.6cm, top=1.8cm, bottom=1.8cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+
+\definecolor{primaryblue}{RGB}{15, 52, 96}
+\definecolor{secondaryteal}{RGB}{19, 111, 99}
+\definecolor{accentred}{RGB}{163, 29, 29}
+\definecolor{boxbg}{RGB}{246, 249, 252}
+\definecolor{warnbg}{RGB}{254, 248, 246}
+\definecolor{darkgray}{RGB}{55, 65, 81}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryblue,
+    urlcolor=secondaryteal,
+    citecolor=primaryblue,
+    pdftitle={Brief Executive Guide: Maternal Emergency Hospital Readiness Q and A and Dataset Audit},
+    pdfauthor={Intelligent Maternal Care Navigation Research Team}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{darkgray}{\textbf{Brief Guide: Maternal Emergency Hospital Readiness (Q1 to Q8)}}}
+\fancyhead[R]{\small\textcolor{darkgray}{Upper Egypt Dataset (798 Records)}}
+\fancyfoot[L]{\small\textcolor{darkgray}{Intelligent Maternal Care Navigation Project}}
+\fancyfoot[R]{\small\textcolor{darkgray}{Page \thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\titleformat{\section}{\large\bfseries\color{primaryblue}}{\thesection.}{0.5em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{secondaryteal}}{\thesubsection}{0.5em}{}
+
+\newtcolorbox{qabox}[1]{
+    colback=boxbg,
+    colframe=primaryblue,
+    fonttitle=\bfseries\small,
+    title={#1},
+    boxrule=0.6pt,
+    arc=2pt,
+    left=5pt,
+    right=5pt,
+    top=3pt,
+    bottom=3pt
+}
+
+\newtcolorbox{alertbox}[1]{
+    colback=warnbg,
+    colframe=accentred,
+    fonttitle=\bfseries\small,
+    title={#1},
+    boxrule=0.6pt,
+    arc=2pt,
+    left=5pt,
+    right=5pt,
+    top=3pt,
+    bottom=3pt
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlist[itemize]{noitemsep, topsep=1pt, leftmargin=1.3em}
+\setlist[enumerate]{noitemsep, topsep=1pt, leftmargin=1.3em}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE\bfseries\color{primaryblue} Maternal Emergency Hospital Readiness: Brief Q\&A \& Audit Summary}\\[0.3em]
+    {\normalsize\bfseries\color{secondaryteal} Verified Answers, Legal Proofs, and Dataset Validation Across 798 Upper Egypt Facilities}\\[0.3em]
+    {\footnotesize\color{darkgray} \textbf{Source Dataset:} \texttt{facilities\_sorted\_by\_governorate.csv} \quad|\quad \textbf{Full Validation Matrix:} \texttt{hospital\_validation.csv} \quad|\quad \textbf{Full Report:} \texttt{hospital\_readiness\_qa.pdf}}
+\end{center}
+\vspace{0.1cm}
+
+\section{Overview}
+This brief report provides direct, 100\% verified answers to the eight hospital readiness questions (\textbf{Q1 to Q8}) required for routing pregnant women with obstetric emergencies across Upper Egypt (Beni Suef, Minya, Assiut, Sohag, Qena, Luxor, and Aswan). Every answer is grounded in verified Egyptian statutes, World Health Organization (WHO) Emergency Obstetric and Newborn Care (EmONC) standards \cite{who2009emonc}, General Authority for Healthcare Accreditation and Regulation (GAHAR) standards \cite{gahar2021hospital}, and a row-by-row validation of all $798$ records in \texttt{facilities\_sorted\_by\_governorate.csv} using the standardized 4-class taxonomy (\textbf{Yes}, \textbf{Mostly Yes}, \textbf{Mostly No}, \textbf{No}).
+
+\section{Concise, Evidence-Based Answers to the Eight Questions (Q1 to Q8)}
+
+\begin{qabox}{Q1: Does this hospital provide maternity and obstetric services, including childbirth?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{346 records (43.4\%)}; \textbf{Mostly Yes} for \textbf{196 records (24.6\%)}; \textbf{Mostly No} for \textbf{147 records (18.4\%)}; and \textbf{No} for \textbf{109 records (13.7\%)}.
+    \item \textbf{Legal \& Clinical Proof:} WHO (2009) distinguishes Basic EmONC (7 signal functions) from Comprehensive EmONC (9 signal functions) \cite{who2009emonc}. Private facilities are licensed by specialty under \textbf{Law No. 51 of 1981 as amended by Law No. 153 of 2004} (Official Gazette Issue 28 bis (a), 11 July 2004) \cite{egypt_law_51_1981_153_2004}, University hospitals under \textbf{Law No. 19 of 2018} \cite{egypt_law_19_2018_univ}, and MOHP hospitals under \textbf{MOHP Decree No. 75 of 2024} \cite{egypt_mohp_decree_75_2024}.
+    \item \textbf{How to Know Without Calling:} Cross-reference official MOHP (\texttt{mohp\_upper\_egypt\_hospitals.xlsx}), UHIA (\texttt{uhia\_upper\_egypt\_hospitals.xlsx}), and University registries (\texttt{university\_hospitals*.csv}), while excluding non-maternal specialty hospitals (chest, fever, psychiatric, dental, oncology, pediatric-only).
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q2: Does this hospital receive obstetric emergencies 24/7?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{46 records (5.8\%)}; \textbf{Mostly Yes} for \textbf{484 records (60.7\%)}; \textbf{Mostly No} for \textbf{16 records (2.0\%)}; and \textbf{No} for \textbf{252 records (31.6\%)}.
+    \item \textbf{Legal \& Clinical Proof:} \textbf{Prime Ministerial Decree No. 1063 of 2014} (Official Gazette Issue 24 bis (b), 15 June 2014) mandates that all governmental, university, and private hospitals receive and stabilize acute medical emergencies free of charge for the first 48 hours \cite{egypt_pm_decree_1063_2014}.
+    \item \textbf{How to Know Without Calling:} Tertiary University and EHA hospitals operate continuous 24/7 obstetric emergency reception by statutory mandate (\cite{egypt_law_19_2018_univ,egypt_law_2_2018_uhia}); MOHP hospital weekly emergency reception rotas (\textit{Jadawil Al-Tawari'}) are published by Governorate Health Directorates and tracked via MOHP Hotline \textbf{137}.
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q3: Is emergency cesarean section available 24/7?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{124 records (15.5\%)}; \textbf{Mostly Yes} for \textbf{416 records (52.1\%)}; \textbf{Mostly No} for \textbf{5 records (0.6\%)}; and \textbf{No} for \textbf{253 records (31.7\%)}.
+    \item \textbf{Legal \& Clinical Proof:} Emergency C-section is \textbf{WHO EmONC Signal Function 8} \cite{who2009emonc} and requires four concurrent 24/7 pillars: obstetric surgeon, anesthesiologist, sterile OR team, and blood backup \cite{gahar2021hospital,egypt_law_51_1981_153_2004}.
+    \item \textbf{How to Know Without Calling:} Static 24/7 surgical capability is confirmed for University and EHA CEmONC hubs via institutional registries; active night-shift anesthesia and OR readiness in MOHP central hospitals is tracked by the Governorate Curative Medicine Directorate and Hotline \textbf{137}.
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q4: Is an obstetrician or qualified doctor available 24/7 to handle maternity emergencies?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{39 records (4.9\%)}; \textbf{Mostly Yes} for \textbf{502 records (62.9\%)}; \textbf{Mostly No} for \textbf{66 records (8.3\%)}; and \textbf{No} for \textbf{191 records (23.9\%)}.
+    \item \textbf{Legal \& Clinical Proof:} \textbf{Law No. 19 of 2018} (Official Gazette Issue 13 bis (c), 2 April 2018; Executive Regulations via Decree No. 4900 of 2018) mandates 24/7 resident and faculty coverage in university hospitals \cite{egypt_law_19_2018_univ}. Public hospital shift duty (\textit{Al-Nubatshiyat}) is governed by \textbf{MOHP Decree No. 75 of 2024} (superseding Joint Decree No. 239 of 1997) \cite{egypt_mohp_decree_75_2024}.
+    \item \textbf{How to Know Without Calling:} University academic residency structures and EHA staffing models guarantee 24/7 in-house qualified doctors; MOHP shift rosters are maintained at the Governorate Directorate of Health Affairs.
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q5: Does this hospital have a functioning blood bank or access to emergency blood transfusions?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{35 records (4.4\%)}; \textbf{Mostly Yes} for \textbf{215 records (26.9\%)}; \textbf{Mostly No} for \textbf{280 records (35.1\%)}; and \textbf{No} for \textbf{268 records (33.6\%)}.
+    \item \textbf{Legal \& Clinical Proof:} Blood transfusion is \textbf{WHO EmONC Signal Function 9} \cite{who2009emonc}. In Egypt, blood collection, testing, storage, and transfusion are strictly regulated by \textbf{Law No. 8 of 2021 on the Regulation of Blood Operations and Plasma Collection} (Official Gazette Issue 15 Supplement, 15 April 2021; Executive Regulations via Prime Ministerial Decree No. 2603 of 2021) \cite{egypt_law_8_2021_blood}.
+    \item \textbf{How to Know Without Calling:} Licensed hospital blood banks and Regional National Blood Transfusion Services (NBTS) centers operate in all 7 Upper Egypt governorate capitals, with real-time unit availability coordinated through MOHP Hotline \textbf{137}.
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q6: Does this hospital have an ICU for mothers with severe complications?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{42 records (5.3\%)}; \textbf{Mostly Yes} for \textbf{156 records (19.5\%)}; \textbf{Mostly No} for \textbf{329 records (41.2\%)}; and \textbf{No} for \textbf{271 records (34.0\%)}.
+    \item \textbf{Legal \& Clinical Proof:} Adult ICU equipment, mechanical ventilation, and intensivist staffing standards are defined under \textbf{Comprehensive Health Insurance Law No. 2 of 2018} (Official Gazette Issue 2 bis, 11 January 2018) \cite{egypt_law_2_2018_uhia} and \textbf{GAHAR Hospital Standards (2021 Edition)} \cite{gahar2021hospital}. Note that in Upper Egypt, only Luxor and Aswan ($11.2\%$ of dataset rows) are currently Phase 1 UHIA governorates.
+    \item \textbf{How to Know Without Calling:} Static ICU capacity is documented in University, EHA, and MOHP Curative Sector registries; dynamic vacant ICU bed availability is tracked in real time by the MOHP Central Bed Registry (\textbf{Hotline 137}).
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q7: Does this hospital have a NICU for newborns who need specialized care?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{41 records (5.1\%)}; \textbf{Mostly Yes} for \textbf{287 records (36.0\%)}; \textbf{Mostly No} for \textbf{213 records (26.7\%)}; and \textbf{No} for \textbf{257 records (32.2\%)}.
+    \item \textbf{Legal \& Clinical Proof:} Basic neonatal resuscitation is \textbf{WHO BEmONC Signal Function 7} \cite{who2009emonc}, while Level-III NICU standards are governed by \textbf{GAHAR (2021)} \cite{gahar2021hospital} and private incubator licensing under \textbf{Law No. 153 of 2004} \cite{egypt_law_51_1981_153_2004}.
+    \item \textbf{How to Know Without Calling:} Level-III NICU hubs are identified from University and EHA hospital profiles, and vacant public NICU incubators (\textit{Haddanat}) are tracked live via MOHP \textbf{Hotline 137}.
+\end{itemize}
+\end{qabox}
+
+\begin{qabox}{Q8: If a pregnant woman arrives with a serious complication that this hospital cannot manage, can it stabilize her and refer or transfer her to another hospital?}
+\begin{itemize}
+    \item \textbf{Direct Answer:} \textbf{Yes} for \textbf{332 records (41.6\%)}; \textbf{Mostly Yes} for \textbf{325 records (40.7\%)}; \textbf{Mostly No} for \textbf{57 records (7.1\%)}; and \textbf{No} for \textbf{84 records (10.5\%)}.
+    \item \textbf{Legal \& Clinical Proof:} Mandatory 48-hour emergency stabilization before transfer is required by \textbf{Prime Ministerial Decree No. 1063 of 2014} \cite{egypt_pm_decree_1063_2014}; pre-transfer clinical stabilization follows \textbf{WHO BEmONC Signal Functions 1 to 3} (parenteral antibiotics, uterotonics, and $\text{MgSO}_4$) \cite{who2009emonc}; and inter-facility ambulance dispatch is governed by \textbf{Presidential Decree No. 139 of 2009} establishing the Egyptian Ambulance Authority (\textbf{Hotline 123}) \cite{egypt_pres_decree_139_2009_eaa}.
+    \item \textbf{How to Know Without Calling:} All official MOHP, EHA/UHIA, and University hospitals are statutorily linked to the EAA \textbf{123} ambulance fleet and MOHP \textbf{137} referral desk.
+\end{itemize}
+\end{qabox}
+
+\section{Dataset Validation Summary \& Key Audit Alerts (798 Records)}
+
+Table \ref{tab:summary_brief} summarizes the row-by-row validation of all $798$ records in \texttt{facilities\_sorted\_by\_governorate.csv} (stored in full in \texttt{hospital\_validation.csv}) under the unified 4-class taxonomy.
+
+{\footnotesize
+\begin{table}[ht!]
+\centering
+\caption{Four-Class Readiness Validation Across All 798 Dataset Records (\texttt{hospital\_validation.csv})}
+\label{tab:summary_brief}
+\begin{tabular}{l r r r r r r r r}
+\toprule
+\textbf{Validation Classification State} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} & \textbf{Q5} & \textbf{Q6} & \textbf{Q7} & \textbf{Q8} \\
+\midrule
+\textbf{Yes} & 346 & 46 & 124 & 39 & 35 & 42 & 41 & 332 \\
+\textbf{Mostly Yes} & 196 & 484 & 416 & 502 & 215 & 156 & 287 & 325 \\
+\textbf{Mostly No} & 147 & 16 & 5 & 66 & 280 & 329 & 213 & 57 \\
+\textbf{No} & 109 & 252 & 253 & 191 & 268 & 271 & 257 & 84 \\
+\midrule
+\textbf{Total Audited Records} & \textbf{798} & \textbf{798} & \textbf{798} & \textbf{798} & \textbf{798} & \textbf{798} & \textbf{798} & \textbf{798} \\
+\bottomrule
+\end{tabular}
+\end{table}
+}
+
+\begin{alertbox}{Critical Dataset Contamination \& Misclassification Alerts in \texttt{facilities\_sorted\_by\_governorate.csv}}
+\begin{enumerate}
+    \item \textbf{Non-Hospital Artifacts Ingested as Hospitals:} The $798$ rows include an Excel summary row (\texttt{CE00130 | Total 19 Hospitals}), an under-construction building (\texttt{CE00013 | Luxor University Hospital}), $3$ National Bank of Egypt ATMs (\texttt{CE00708}, \texttt{CE01440}, \texttt{CE01877}), $1$ public park (\texttt{CE01783}), $1$ seafood restaurant (\texttt{CE01803}), $5$ veterinary clinics (\texttt{CE00603}, \texttt{CE01003}, \texttt{CE02094}, \texttt{CE01807}, \texttt{CE01735}), $2$ pharmacies, $2$ diagnostic labs, $6$ health administration offices, and $3$ bare village place-names (\texttt{CE00117}, \texttt{CE01207}, \texttt{CE01779}).
+    \item \textbf{Mislabeled Flagship Hospitals:} \texttt{CE00028 | Isis Specialist Hospital} (Luxor's flagship EHA maternity/NICU center) is mislabeled as \texttt{unspecified\_hospital} (and duplicated by its old name \texttt{CE00114 | Al Bayadiyah Central}), whereas \texttt{CE01966 | Umm Al-Qusour Hospital} (chest/rehabilitation) and \texttt{CE01965 | New Assiut Hospital} are falsely labeled \texttt{university\_maternal\_hospital}. Also, Assiut University Women's Health Hospital is \texttt{CE01955} (duplicated by \texttt{CE00929}).
+    \item \textbf{Unreliable Stacked Coordinates:} Cross-checking \texttt{facilities\_flagged.csv} shows \textbf{62 rows (7.8\%)} have \texttt{coord\_reliable = False} and \textbf{82 rows (10.3\%)} share identical coordinates stacked at governorate centroids.
+    \item \textbf{Out-of-Governorate Pins \& Cross-Governorate Discrepancies:} Auditing quarantined 8 pins physically outside Upper Egypt (Matrouh / North Coast and Giza) under Tier 9 with all readiness indicators set to \textbf{No}, and documented 45 cross-governorate misassigned pins in \texttt{unresolved\_issues}.
+\end{enumerate}
+\end{alertbox}
+
+\section{Safe Integration with Enhanced Dijkstra (EDSPA) Routing}
+Rather than applying a multiplicative penalty to road edges (which fails when travel time $T \to 0$ and because road intersections have no hospital readiness score), hospital readiness must filter the target set \texttt{EndList} \textbf{before} running Team 2's multi-target early-stopping Dijkstra (\texttt{Enhanced\_Dijkstra\_Routing.ipynb}):
+\begin{equation}
+    H_{\text{elig}}^{(1)}(c) = \bigl\{\, h \in H_{\text{valid}} \;\big|\; \text{coord\_reliable}(h) = \text{True} \;\wedge\; \forall i \text{ required by condition } c,\; Q_i(h) = \text{Yes} \,\bigr\}
+\end{equation}
+\begin{equation}
+    \bigl(h_{(1)}^*, h_{(2)}^*, h_{(3)}^*\bigr) = \operatorname*{arg\,min\text{-}k}_{h \in H_{\text{elig}}^{(1)}(c)} \sum_{(u,v) \in \pi^*(s, h)} T(u, v)
+\end{equation}
+If the travel time to the nearest Tier-1 hub exceeds $T_{\max} = 45\text{ minutes}$, the router also identifies the nearest verified stabilization hospital $h_{\text{stab}}^*$ ($Q_8 = \text{Yes}$) for immediate resuscitation en route.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}
